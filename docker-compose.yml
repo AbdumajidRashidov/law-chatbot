@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./backend/.env:/app/.env
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/legalai
+      - VECTOR_DB_HOST=vector-db
+      - VECTOR_DB_PORT=19530
+    depends_on:
+      - db
+      - vector-db
+    networks:
+      - legalai-network
+
+  db:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=legalai
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - legalai-network
+
+  vector-db:
+    image: milvusdb/milvus:v2.3.3
+    ports:
+      - "19530:19530"
+      - "19121:19121"
+    environment:
+      - MILVUS_HOST=vector-db
+      - MILVUS_PORT=19530
+    volumes:
+      - milvus_data:/var/lib/milvus
+    networks:
+      - legalai-network
+
+volumes:
+  postgres_data:
+  milvus_data:
+
+networks:
+  legalai-network:
+    driver: bridge
